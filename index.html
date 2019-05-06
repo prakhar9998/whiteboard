@@ -5,48 +5,68 @@
     <script src="https://d3js.org/d3.v5.min.js"></script>
   </head>
   <body>
+    <h1>Drag to draw</h1>
+    <button id="erase">Erase</button>
     <script>
-    var jsonCircles = [
-      { "x_axis": 30, "y_axis": 30, "radius": 20, "color" : "green" },
-      { "x_axis": 70, "y_axis": 70, "radius": 20, "color" : "purple"},
-      { "x_axis": 110, "y_axis": 100, "radius": 20, "color" : "red"}];
+      document.addEventListener('DOMContentLoaded', () => {
+        const svgContainer = d3.select("body").append("svg")
+          .attr("width", 600)
+          .attr("height", 600)
+          .style("border", "1px solid red");
 
-      var svgContainer = d3.select("body").append("svg")
-        .attr("width", 600)
-        .attr("height", 600)
-        .style("border", "1px solid red");
+        var shouldDraw = false;
+        var points = [];
+        var lines = [];
+        var coords = [];
+        var numPoints = 0;
 
-      var shouldDraw = false;
-      
-      function drawPoint() {
-        var coordinates = d3.mouse(this);
-        if (shouldDraw) {
-          svgContainer.append("circle")
-          .attr("cx", coordinates[0])
-          .attr("cy", coordinates[1])
-          .attr("r", 5);
+        var stroke = 2;
+        function drawLine() {
+          const c1 = coords[coords.length - 1];
+          const c2 = coords[coords.length - 2];
+          const line = svgContainer.append("line")
+            .attr("x1", c1[0])
+            .attr("y1", c1[1])
+            .attr("x2", c2[0])
+            .attr("y2", c2[1])
+            .attr("style", `stroke:rgb(0,0,0);stroke-width:${stroke*2}`);
+          lines.push(line);
         }
+
+        function drawPoint() {
+          if (!shouldDraw) return;
+          const coordinates = d3.mouse(this);
+          const point = svgContainer.append("circle")
+            .attr("cx", coordinates[0])
+            .attr("cy", coordinates[1])
+            .attr("r", stroke);
+          numPoints++
+          coords.push(coordinates);
+          points.push(point);
+          if (numPoints > 1) {
+            drawLine();
+          }
+          
+        }
+
+        svgContainer.on('mousedown', function() {
+          shouldDraw = true;
+        });
+        svgContainer.on('mousemove', drawPoint);
+        svgContainer.on('mouseup', function() {
+          shouldDraw = false;
+          numPoints=0;
+        });
         
-      }
-
-      svgContainer.on('mousedown', function() {
-        shouldDraw = true;
+        document.querySelector('#erase').addEventListener('click', () => {
+          for (let i = 0; i < points.length; i++) {
+            points[i].remove();
+          }
+          for (let i = 0; i < lines.length; i++) {
+            lines[i].remove();
+          }
+        })
       });
-      svgContainer.on('mousemove', drawPoint);
-      svgContainer.on('mouseup', function() {
-        shouldDraw = false;
-      })
-
-      var circles = svgContainer.selectAll("circle")
-        .data(jsonCircles)
-        .enter()
-        .append("circle");
-
-      var circleAttributes = circles
-        .attr("cx", function(d) { return d.x_axis; })
-        .attr("cy", function(d) { return d.y_axis; })
-        .attr("r", function(d) { return d.radius; })
-        .style("fill", function(d) { return d.color; });
     </script>
   </body>
 </html>
